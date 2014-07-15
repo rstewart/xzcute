@@ -1,5 +1,6 @@
 package com.shopwiki.xzcute;
 
+import java.io.PrintStream;
 import java.util.concurrent.*;
 import java.util.concurrent.ThreadPoolExecutor.AbortPolicy;
 import java.util.concurrent.atomic.*;
@@ -22,6 +23,7 @@ public final class VerboseThreadPoolExecutorFactory {
     private RejectedExecutionHandler handler = new AbortPolicy();
 
     private boolean print = true;
+    private PrintStream printStream = UTF8.out;
     private int tasksPerPrint = 1;
     private long millisPerPrint = 0L;
     private boolean verbosePrint = false;
@@ -126,6 +128,7 @@ public final class VerboseThreadPoolExecutorFactory {
                 threadFactory,
                 handler,
                 print,
+                printStream,
                 tasksPerPrint,
                 millisPerPrint,
                 verbosePrint,
@@ -195,6 +198,15 @@ public final class VerboseThreadPoolExecutorFactory {
 
     public VerboseThreadPoolExecutorFactory setPrintExceptions(boolean printExceptions) {
         this.printExceptions = printExceptions;
+        return this;
+    }
+
+    public PrintStream getPrintStream() {
+        return printStream;
+    }
+
+    public VerboseThreadPoolExecutorFactory setPrintStream(PrintStream printStream) {
+        this.printStream = printStream;
         return this;
     }
 }

@@ -1,5 +1,6 @@
 package com.shopwiki.xzcute;
 
+import java.io.PrintStream;
 import java.util.Formatter;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -20,6 +21,7 @@ public class VerboseThreadPoolExecutor extends ThreadPoolExecutor {
     private final AtomicLong startTime = new AtomicLong(0L);
 
     public final boolean print;
+    public final PrintStream printStream;
     public final int tasksPerPrint;
     public final long millisPerPrint;
     public final boolean verbosePrint;
@@ -50,6 +52,7 @@ public class VerboseThreadPoolExecutor extends ThreadPoolExecutor {
             ThreadFactory threadFactory,
             RejectedExecutionHandler handler,
             boolean print,
+            PrintStream printStream,
             int tasksPerPrint,
             long millisPerPrint,
             boolean verbosePrint,
@@ -60,6 +63,7 @@ public class VerboseThreadPoolExecutor extends ThreadPoolExecutor {
 
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
         this.print = print;
+        this.printStream = printStream;
         this.tasksPerPrint = tasksPerPrint;
         this.millisPerPrint = millisPerPrint;
         this.verbosePrint = verbosePrint;
@@ -168,7 +172,7 @@ public class VerboseThreadPoolExecutor extends ThreadPoolExecutor {
             outputLine += sep + runnable.toString();
         }
 
-        System.out.println(outputLine);
+        printStream.println(outputLine);
     }
 
     private String getLogString(int except, int done, int left, long time) {

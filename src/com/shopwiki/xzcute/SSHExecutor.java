@@ -1,24 +1,38 @@
 package com.shopwiki.xzcute;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
-import com.amazonaws.services.ec2.model.*;
-import com.google.common.collect.*;
+import sun.security.jca.GetInstance.Instance;
+
 import com.google.common.collect.ImmutableList;
-import com.shopwiki.io.LineIterator;
-import com.shopwiki.net.Page;
-import com.shopwiki.prodsys.SSH.SSHException;
-import com.shopwiki.util.*;
-import com.shopwiki.util.concurrent.*;
-import com.shopwiki.util.concurrent.EnhancedThreadPoolExecutor.TaskPrinter;
-import com.shopwiki.util.webservices.aws.AWSUtil;
-import com.shopwiki.wiki.*;
+import com.google.common.collect.Lists;
+import com.shopwiki.xzcute.VerboseThreadPoolExecutor.TaskPrinter;
+import com.shopwiki.xzcute.sshexec.Args;
+import com.shopwiki.xzcute.sshexec.LineIterator;
+import com.shopwiki.xzcute.sshexec.PasswordField;
+import com.shopwiki.xzcute.sshexec.SSH;
+import com.shopwiki.xzcute.sshexec.SSH.SSHException;
+import com.sun.tools.javac.util.Pair;
 
 /**
  * @owner rstewart
  */
-public class ClusterSSH {
+public class SSHExecutor {
 
     public final String _username;
     public final String _sshKeyFile;
@@ -26,7 +40,7 @@ public class ClusterSSH {
     public final List<Worker> _workers;
     public final boolean _verbose; // TODO: Get rid of this and make the methods that use it taken an extra param ???
 
-    public static class Worker { // TODO: Extend from com.shopwiki.wiki.Machine ???
+    public static class Worker {
         public final int w;
         public final String host;
 
@@ -37,20 +51,20 @@ public class ClusterSSH {
 
         @Override
         public String toString() {
-            String s = TextUtil.pad("" + w, 2, true, ' ');
+            String s = String.format("%d2", w);
             return "Worker # " + s + ": " + host;
         }
     }
 
-    public ClusterSSH(Args args) throws Exception {
+    public SSHExecutor(Args args) throws Exception {
         this(args, getWorkers(args));
     }
 
-    public ClusterSSH(Args args, Iterable<String> workers) throws Exception {
+    public SSHExecutor(Args args, Iterable<String> workers) throws Exception {
         this(args, getWorkers(workers));
     }
 
-    public ClusterSSH(Args args, Collection<Worker> workers) throws Exception {
+    public SSHExecutor(Args args, Collection<Worker> workers) throws Exception {
         if (args == null) {
             args = new Args(null);
         }
@@ -94,16 +108,6 @@ public class ClusterSSH {
         } else if (args.hasFlag("file")) {
             String filename = args.get("file");
             workers = getWorkersFromFile(filename);
-        } else if (args.hasFlag("ec2")) {
-            String securityGroup = args.get("ec2");
-            workers = getWorkersFromEC2(securityGroup);
-        } else if (args.hasFlag("use")) {
-            String use = args.get("use");
-            workers = getWorkersByUse(use, args);
-        } else if (args.hasFlag("all")) {
-            workers = getAllWorkers();
-        } else {
-            workers = getWorkersByProperty(args);
         }
 
         if (workers == null || workers.isEmpty()) {
@@ -167,107 +171,9 @@ public class ClusterSSH {
         return getWorkers(new LineIterator(filename));
     }
 
-    public static List<Worker> getWorkersFromEC2(String securityGroup) {
-        System.out.println("Getting workers from EC2 security group: " + securityGroup);
-        List<Worker> workers = new ArrayList<Worker>();
-        List<String> instanceIds = new ArrayList<String>();
-        int w = 0;
-        for (Reservation reservation : AWSUtil.getEC2().describeInstances().getReservations()) {
-            if (! reservation.getGroupNames().contains(securityGroup)) {
-                continue;
-            }
-
-            for (Instance instance : reservation.getInstances()) {
-                String host = instance.getPublicDnsName();
-                if (host == null || host.isEmpty()) {
-                    continue;
-                }
-                w++;
-                Worker worker = new Worker(w, host);
-                workers.add(worker);
-                instanceIds.add(instance.getInstanceId());
-                System.out.println("# " + w + "\t" + worker);
-            }
-        }
-        System.out.println(StringUtil.join(" ", instanceIds));
-        return workers;
-    }
-
-    public static List<Worker> getWorkersByUse(String use, Args args) {
-        StringBuilder url = new StringBuilder("http://dev.shopwiki.com/admin/prodsys/machineSearch.jsp?f_use=" + use);
-
-        for (Pair<String, String> filter : getFilters(args)) {
-            url.append("&" + filter.first + "=" + filter.second);
-        }
-
-        Page page = new Page(-1, url.toString());
-        page.setUseCache(false);
-        page.setWriteToCache(false);
-        System.out.println("Getting workers from " + page);
-        String text = page.getRawHtml().trim();
-        if (text.isEmpty()) {
-            return Collections.emptyList();
-        }
-        return getWorkers(StringUtil.split(text, "\n"));
-    }
-
-    public static List<Worker> getWorkersByProperty(Args args) {
-        List<Pair<String, String>> filters = getFilters(args);
-        List<String> hosts = new ArrayList<String>();
-
-        for (Machine machine : Machine.getAllProductionActive()) {
-            boolean add = true;
-
-            for (Pair<String, String> filter : filters) {
-                String property = filter.first.substring(2);
-                String value = machine.getProperty(property);
-                if (value == null || StringUtil.containsIgnoreCase(value, filter.second) == false) {
-                    add = false;
-                    break;
-                }
-            }
-
-            if (add) {
-                hosts.add(machine.getHost());
-            }
-        }
-
-        return getWorkers(hosts);
-    }
-
-    private static List<Pair<String, String>> getFilters(Args args) {
-        List<Pair<String, String>> filters = Lists.newArrayList();
-
-        for (String flag : args.getFlags(false)) {
-            if (! flag.startsWith("f_")) {
-                continue;
-            }
-            String value = args.get(flag);
-            if (value == null || value.isEmpty()) {
-                continue;
-            }
-            System.out.println("FILTER - " + flag + ": " + value);
-            filters.add(Pair.create(flag, value));
-        }
-
-        return filters;
-    }
-
-    public static List<Worker> getAllWorkers() {
-        List<Worker> workers = Lists.newArrayList();
-        int w = 0;
-        for (int i = 1; i <= 255; i++) {
-            w++;
-            Worker worker = new Worker(w, "ny" + i + ".shopwiki.com");
-            workers.add(worker);
-            System.out.println("# " + w + "\t" + worker);
-        }
-        return workers;
-    }
-
     public void commandWorkers(String command, Args args) throws SSHException, InterruptedException {
         boolean serial = args.hasFlag("serial");
-        boolean noWait = args.hasFlag("noWait", false);
+        boolean noWait = args.hasFlag("noWait");
         commandWorkers(command, serial, noWait);
     }
 
@@ -347,7 +253,7 @@ public class ClusterSSH {
 
     private void _commandWorkersAsyncOrdered(String command) throws InterruptedException {
 
-        EnhancedThreadPoolExecutorFactory factory = new EnhancedThreadPoolExecutorFactory();
+        VerboseThreadPoolExecutorFactory factory = new VerboseThreadPoolExecutorFactory();
         factory.setPoolSize(_workers.size());
         factory.setVerbosePrint(true);
         factory.setPrintExceptions(false);
@@ -356,7 +262,7 @@ public class ClusterSSH {
             @Override
             public String resultToString(String result) { return ""; }
         });
-        EnhancedThreadPoolExecutor executor = factory.getTheThreadPoolExecutor();
+        VerboseThreadPoolExecutor executor = factory.getTheThreadPoolExecutor();
 
         Map<Worker,Future<String>> workerToFuture = new LinkedHashMap<Worker,Future<String>>();
 
@@ -393,14 +299,6 @@ public class ClusterSSH {
         commandWorkers("ps aux | grep " + pattern + " | grep -v grep", args);
     }
 
-    public void supervisorControl(String command, Args args) throws SSHException, InterruptedException {
-        command = "supervisorctl " + command;
-        if (_username.equals("ec2-user")) {
-            command = "sudo " + command;
-        }
-        commandWorkers(command, args);
-    }
-
     public void doStuff(Args args) throws Exception {
 
         if (args.hasFlag("cmd")) {
@@ -414,18 +312,12 @@ public class ClusterSSH {
             psGrep(pattern, args);
             return;
         }
-
-        if (args.hasFlag("supervisor")) {
-            String cmd = args.get("supervisor");
-            supervisorControl(cmd, args);
-            return;
-        }
     }
 
     public static void main(String[] jargs) throws Exception {
         Args args = new Args(jargs);
         System.out.println();
-        ClusterSSH clusterSSH = new ClusterSSH(args);
+        SSHExecutor clusterSSH = new SSHExecutor(args);
         System.out.println();
         clusterSSH.doStuff(args);
     }
