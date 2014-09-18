@@ -2,9 +2,10 @@
 package com.shopwiki.xzcute.sshexec;
 
 import java.io.*;
+import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Charsets;
 import com.jcraft.jsch.*;
-import com.shopwiki.util.*;
 
 /**
  * @owner eliot
@@ -13,7 +14,7 @@ import com.shopwiki.util.*;
 public class SSH {
 
     public static final boolean DEBUG = false;
-    public static final int CONNECT_TIMEOUT = (int)TimeConstants.MS_MINUTE;
+    public static final int CONNECT_TIMEOUT = (int)TimeUnit.MINUTES.toMillis(1);
 
     private static class MyUserInfo implements UserInfo {
 
@@ -102,7 +103,7 @@ public class SSH {
             }
             channel.disconnect();
 
-            String output = new String(baos.toByteArray(), CharsetConstants.UTF_8);
+            String output = new String(baos.toByteArray(), Charsets.UTF_8);
 
             if (checkExitCode && channel.getExitStatus() != 0) {
                 throw new SSHException(output);
@@ -150,7 +151,8 @@ public class SSH {
             try {
                 jsch.addIdentity(path);
             } catch (JSchException e) {
-                Log.error(SSH.class, "Couldn't load SSH identity from file: " + path, e);
+                System.err.println("Couldn't load SSH identity from file: " + path);
+                e.printStackTrace();
             }
         }
     }

@@ -1,8 +1,7 @@
-package com.shopwiki.xzcute;
+package com.shopwiki.xzcute.sshexec;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -17,17 +16,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import sun.security.jca.GetInstance.Instance;
-
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import com.shopwiki.xzcute.UTF8;
+import com.shopwiki.xzcute.VerboseThreadPoolExecutor;
 import com.shopwiki.xzcute.VerboseThreadPoolExecutor.TaskPrinter;
-import com.shopwiki.xzcute.sshexec.Args;
-import com.shopwiki.xzcute.sshexec.LineIterator;
-import com.shopwiki.xzcute.sshexec.PasswordField;
-import com.shopwiki.xzcute.sshexec.SSH;
+import com.shopwiki.xzcute.VerboseThreadPoolExecutorBuilder;
 import com.shopwiki.xzcute.sshexec.SSH.SSHException;
-import com.sun.tools.javac.util.Pair;
 
 /**
  * @owner rstewart
@@ -129,6 +124,8 @@ public class SSHExecutor {
         return workersToUse;
     }
 
+    private static final Splitter COMMA_SPLITTER = Splitter.on(',');
+    
     public static Set<Integer> getWorkerNums(Args args) {
         String arg = args.get("w", "");
         if (arg.isEmpty()) {
@@ -136,7 +133,7 @@ public class SSHExecutor {
         }
 
         Set<Integer> ws = new TreeSet<Integer>();
-        for (String piece : StringUtil.split(arg, ",")) {
+        for (String piece : COMMA_SPLITTER.split(arg)) {
             ws.add(Integer.parseInt(piece));
         }
         return ws;
@@ -163,7 +160,7 @@ public class SSHExecutor {
 
     public static List<Worker> getWorkersFromString(String str) {
         System.out.println("Getting workers from string: " + str);
-        return getWorkers(StringUtil.split(str, ","));
+        return getWorkers(COMMA_SPLITTER.split(str));
     }
 
     public static List<Worker> getWorkersFromFile(String filename) {
@@ -253,16 +250,16 @@ public class SSHExecutor {
 
     private void _commandWorkersAsyncOrdered(String command) throws InterruptedException {
 
-        VerboseThreadPoolExecutorFactory factory = new VerboseThreadPoolExecutorFactory();
-        factory.setPoolSize(_workers.size());
-        factory.setVerbosePrint(true);
-        factory.setPrintExceptions(false);
-        factory.setExpectedNumTasks(_workers.size());
-        factory.setTaskPrinter(new TaskPrinter<String>() {
+        VerboseThreadPoolExecutor executor = VerboseThreadPoolExecutor.builder()
+        .setPoolSize(_workers.size())
+        .setVerbosePrint(true)
+        .setPrintExceptions(false)
+        .setExpectedNumTasks(_workers.size())
+        .setTaskPrinter(new TaskPrinter<String>() {
             @Override
             public String resultToString(String result) { return ""; }
-        });
-        VerboseThreadPoolExecutor executor = factory.getTheThreadPoolExecutor();
+        })
+        .build();
 
         Map<Worker,Future<String>> workerToFuture = new LinkedHashMap<Worker,Future<String>>();
 

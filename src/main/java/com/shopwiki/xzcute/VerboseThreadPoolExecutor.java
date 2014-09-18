@@ -11,8 +11,8 @@ import java.util.concurrent.atomic.*;
  */
 public class VerboseThreadPoolExecutor extends ThreadPoolExecutor {
 
-    public static VerboseThreadPoolExecutorFactory factory() {
-        return new VerboseThreadPoolExecutorFactory();
+    public static VerboseThreadPoolExecutorBuilder builder() {
+        return new VerboseThreadPoolExecutorBuilder();
     }
 
     private final AtomicInteger completedCounter = new AtomicInteger(0);
@@ -28,8 +28,6 @@ public class VerboseThreadPoolExecutor extends ThreadPoolExecutor {
     public final boolean printExceptions;
     public final int expectedNumTasks;
 
-    private final TaskPrinter taskPrinter; // Can't get generics working here :(
-
     private final String printWidth;
     private final String countsFormat;
 
@@ -42,6 +40,8 @@ public class VerboseThreadPoolExecutor extends ThreadPoolExecutor {
             return String.valueOf(result);
         }
     }
+
+    private final TaskPrinter taskPrinter; // Can't get generics working here :(
 
     public VerboseThreadPoolExecutor(
             int corePoolSize,
@@ -71,11 +71,11 @@ public class VerboseThreadPoolExecutor extends ThreadPoolExecutor {
         this.expectedNumTasks = expectedNumTasks;
         int numTasksDigits = expectedNumTasks > 0 ? String.valueOf(expectedNumTasks).length() : 10;
         this.printWidth = numTasksDigits + "d";
-        this.countsFormat = "%1$tF %1$tT.%1$tL %2$" + printWidth + " tasks complete" + sep + "%3$" + printWidth + " exceptions";
+        this.countsFormat = "%1$tF %1$tT.%1$tL %2$" + printWidth + " tasks complete" + SEP + "%3$" + printWidth + " exceptions";
         this.taskPrinter = taskPrinter;
     }
 
-    private static final String sep = "; ";
+    private static final String SEP = "; ";
 
     private class FutureTaskWithCallable<V> extends FutureTask<V> {
 
@@ -102,7 +102,7 @@ public class VerboseThreadPoolExecutor extends ThreadPoolExecutor {
                 Throwable cause = e.getCause();
                 message = cause != null ? cause.toString() : e.toString();
             }
-            return taskPrinter.taskToString(callable) + sep + message;
+            return taskPrinter.taskToString(callable) + SEP + message;
         }
     }
 
@@ -169,7 +169,7 @@ public class VerboseThreadPoolExecutor extends ThreadPoolExecutor {
 
         String outputLine = getLogString(exceptionCount, done, left, time);
         if (verbosePrint) {
-            outputLine += sep + runnable.toString();
+            outputLine += SEP + runnable.toString();
         }
 
         printStream.println(outputLine);
@@ -181,14 +181,11 @@ public class VerboseThreadPoolExecutor extends ThreadPoolExecutor {
         long millisTaken = System.currentTimeMillis() - startTime.get();
         double tasksPerHour = (double)(TimeUnit.HOURS.toMillis(1) * done) / millisTaken;
         //formatter.format(sep + "taken %s (%.3g per hour)", Pretty.time(millisTaken), tasksPerHour);
-        String timeTaken       = TextUtil.pad(Pretty.time(millisTaken),    12, false, ' ');
-        String tasksPerHourStr = TextUtil.pad(Pretty.metric(tasksPerHour),  6, true,  ' ');
-        formatter.format(sep + "taken %s (%s per hour)", timeTaken, tasksPerHourStr);
+        formatter.format(SEP + "taken %-12s (%6s per hour)", Pretty.time(millisTaken), Pretty.metric(tasksPerHour));
         if (expectedNumTasks > 0) {
             long millisToComplete = millisToComplete(startTime.get(), done, left);
             //sb.append(String.format(" %" + printWidth + " left", left));
-            String timeToComplete = TextUtil.pad(Pretty.time(millisToComplete), 12, false, ' ');
-            formatter.format(sep + "ETC %s", timeToComplete);
+            formatter.format(SEP + "ETC %-12s", Pretty.time(millisToComplete));
         }
         return formatter.toString();
     }

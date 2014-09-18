@@ -16,13 +16,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
 /**
- * A potential replacement for RefreshableManager
- *
  * @owner rstewart
  */
 public class BackgroundExecutor {
@@ -169,7 +168,7 @@ public class BackgroundExecutor {
                 } catch (Throwable t) {
                     logger.error(name, t);
                     job.error();
-                    return TextUtil.getStackTrace(t);
+                    return Throwables.getStackTraceAsString(t);
                 } finally {
                     job.ran(startTime);
                 }

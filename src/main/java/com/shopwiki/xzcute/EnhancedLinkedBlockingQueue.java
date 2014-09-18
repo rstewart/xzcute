@@ -3,7 +3,11 @@ package com.shopwiki.xzcute;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * @author jdickinson
+ * The only thing special about this is that it treats a call to offer() like it is a call to put().
+ *
+ * It is the default workQueue for EnhancedThreadPoolExecutorBuilder. 
+ *
+ * @owner jdickinson
  */
 public class EnhancedLinkedBlockingQueue<E> extends LinkedBlockingQueue<E> {
 
@@ -18,8 +22,7 @@ public class EnhancedLinkedBlockingQueue<E> extends LinkedBlockingQueue<E> {
         try {
             super.put(elem);
         } catch (InterruptedException e) {
-            // this should really never happen.
-            throw new RuntimeException("This should never happen.", e);
+            throw new RuntimeException("This should really never happen.", e);
         }
         return true;
     }

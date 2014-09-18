@@ -1,9 +1,14 @@
 package com.shopwiki.xzcute.sshexec;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.Iterator;
-import java.util.zip.GZIPInputStream;
 
 /**
  * @owner Jim
@@ -34,9 +39,9 @@ public class LineIterator implements Iterator<String>, Iterable<String> {
     public static InputStream getInputStream(File file) {
         try {
             InputStream is = new FileInputStream(file);
-            if (IOUtil.isGzip(file)) {
-                is = new GZIPInputStream(is);
-            }
+            //if (IOUtil.isGzip(file)) {
+            //    is = new GZIPInputStream(is);
+            //}
             return is;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -100,5 +105,4 @@ public class LineIterator implements Iterator<String>, Iterable<String> {
     public Iterator<String> iterator() {
         return this;
     }
-
 }
