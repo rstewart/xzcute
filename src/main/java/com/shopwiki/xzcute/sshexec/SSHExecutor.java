@@ -17,6 +17,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.shopwiki.xzcute.VerboseThreadPoolExecutor;
 import com.shopwiki.xzcute.VerboseThreadPoolExecutor.TaskPrinter;
@@ -110,10 +111,10 @@ public class SSHExecutor {
     }
 
     private static final Splitter COMMA_SPLITTER = Splitter.on(',');
-    
+
     public static Set<Integer> getWorkerNums(Args args) {
-        String arg = args.get("w", "");
-        if (arg.isEmpty()) {
+        String arg = args.get("w");
+        if (Strings.isNullOrEmpty(arg)) {
             return null;
         }
 
@@ -236,15 +237,15 @@ public class SSHExecutor {
     private void _commandWorkersAsyncOrdered(String command) throws InterruptedException {
 
         VerboseThreadPoolExecutor executor = VerboseThreadPoolExecutor.builder()
-        .setPoolSize(_workers.size())
-        .setVerbosePrint(true)
-        .setPrintExceptions(false)
-        .setExpectedNumTasks(_workers.size())
-        .setTaskPrinter(new TaskPrinter<String>() {
-            @Override
-            public String resultToString(String result) { return ""; }
-        })
-        .build();
+                .setPoolSize(_workers.size())
+                .setVerbosePrint(true)
+                .setPrintExceptions(false)
+                .setExpectedNumTasks(_workers.size())
+                .setTaskPrinter(new TaskPrinter<String>() {
+                    @Override
+                    public String resultToString(String result) { return ""; }
+                })
+                .build();
 
         Map<Worker,Future<String>> workerToFuture = new LinkedHashMap<Worker,Future<String>>();
 
@@ -297,7 +298,7 @@ public class SSHExecutor {
     }
 
     public static void main(String[] jargs) throws Exception {
-        Args args = new Args(jargs);
+        Args args = new Args(jargs, true);
         System.out.println();
         SSHExecutor clusterSSH = new SSHExecutor(args);
         System.out.println();
