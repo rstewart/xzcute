@@ -7,8 +7,6 @@ import java.text.NumberFormat;
  * Static methods for pretty-printing (i.e. human-readable)
  *
  * @owner rstewart
- * @owner Kiril
- * @Owner Dan
  */
 public class Pretty {
 

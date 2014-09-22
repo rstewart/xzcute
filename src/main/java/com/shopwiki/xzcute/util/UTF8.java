@@ -4,6 +4,8 @@ import java.io.PrintStream;
 
 /**
  * Print String to STDOUT / STDERR in UTF-8.
+ *
+ * Copied from shopwiki repo.
  */
 public class UTF8 {
 

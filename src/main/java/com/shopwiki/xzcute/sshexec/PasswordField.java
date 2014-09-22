@@ -4,7 +4,7 @@ import java.io.*;
 
 /**
  * Copied from: http://java.sun.com/developer/technicalArticles/Security/pwordmask/
- * 
+ *
  * Note: The solution makes extensive use of threads,
  * however, if the machine is under heavy load,
  * there is no guarantee that the MaskingThread will run often enough.

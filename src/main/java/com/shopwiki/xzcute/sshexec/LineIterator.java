@@ -11,8 +11,9 @@ import java.nio.charset.Charset;
 import java.util.Iterator;
 
 /**
- * @owner Jim
- * @buddy Eliot
+ * Copied from shopwiki repo.
+ *
+ * @owner jdickinson
  */
 public class LineIterator implements Iterator<String>, Iterable<String> {
 
