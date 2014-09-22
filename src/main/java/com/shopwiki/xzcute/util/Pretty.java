@@ -62,24 +62,25 @@ public class Pretty {
 
     public static String round(double d) {
         if (d < 1) {
-            return String.valueOf(round(d, 3));
+            return round(d, 3);
         }
 
         if (d < 10) {
-            return String.valueOf(round(d, 2));
+            return round(d, 2);
         }
 
         if (d < 100) {
-            return String.valueOf(round(d, 1));
+            return round(d, 1);
         }
 
-        return String.valueOf(Math.round(d));
+        return round(d, 0);
     }
 
-    private static double round(double d, int decimalPlaces) {
+    public static String round(double d, int decimalPlaces) {
         double tens = Math.pow(10, decimalPlaces);
         //return FastMath.round(d * tens) / tens;
-        return Math.round(d * tens) / tens;
+        d = Math.round(d * tens) / tens; // TODO: Use FastMath.round ???
+        return String.valueOf(d);
     }
 
     private static final ThreadLocal<NumberFormat> numberFormat = new ThreadLocal<NumberFormat>() {
