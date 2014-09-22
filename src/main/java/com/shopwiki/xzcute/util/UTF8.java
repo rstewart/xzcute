@@ -1,4 +1,4 @@
-package com.shopwiki.xzcute;
+package com.shopwiki.xzcute.util;
 
 import java.io.PrintStream;
 

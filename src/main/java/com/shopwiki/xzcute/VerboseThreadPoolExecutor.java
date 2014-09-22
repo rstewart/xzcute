@@ -5,6 +5,8 @@ import java.util.Formatter;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import com.shopwiki.xzcute.util.Pretty;
+
 /**
  * @owner jdickinson
  * @owner rstewart

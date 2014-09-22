@@ -1,4 +1,4 @@
-package com.shopwiki.xzcute;
+package com.shopwiki.xzcute.util;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;

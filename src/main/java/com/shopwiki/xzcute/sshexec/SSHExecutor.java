@@ -18,11 +18,11 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
-import com.shopwiki.xzcute.UTF8;
 import com.shopwiki.xzcute.VerboseThreadPoolExecutor;
 import com.shopwiki.xzcute.VerboseThreadPoolExecutor.TaskPrinter;
 import com.shopwiki.xzcute.VerboseThreadPoolExecutorBuilder;
 import com.shopwiki.xzcute.sshexec.SSH.SSHException;
+import com.shopwiki.xzcute.util.UTF8;
 
 /**
  * @owner rstewart

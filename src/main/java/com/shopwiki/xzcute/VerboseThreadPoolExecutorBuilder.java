@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Supplier;
 import com.shopwiki.xzcute.VerboseThreadPoolExecutor.TaskPrinter;
+import com.shopwiki.xzcute.util.UTF8;
 
 /**
  * @owner jdickinson
