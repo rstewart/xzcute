@@ -20,7 +20,6 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.shopwiki.xzcute.VerboseThreadPoolExecutor;
 import com.shopwiki.xzcute.VerboseThreadPoolExecutor.TaskPrinter;
-import com.shopwiki.xzcute.VerboseThreadPoolExecutorBuilder;
 import com.shopwiki.xzcute.sshexec.SSH.SSHException;
 import com.shopwiki.xzcute.util.UTF8;
 
@@ -40,7 +39,7 @@ public class SSHExecutor {
         public final String host;
 
         private Worker(int w, String host) {
-            this.w    = w;
+            this.w = w;
             this.host = host;
         }
 
@@ -64,26 +63,12 @@ public class SSHExecutor {
             args = new Args(null);
         }
 
-        String username = args.get("user");
-        String sshKeyFile = args.get("key");
-
-        if (username == null) {
-            if (args.hasFlag("ec2")) {
-                username = "ec2-user";
-            } else {
-                username = "localadmin";
-            }
-        }
-        _username = username;
-
-        if (sshKeyFile == null && args.hasFlag("ec2")) {
-            sshKeyFile = "/data/shopwiki-aws/account-info/id_rsa-kp1";
-        }
-        _sshKeyFile = sshKeyFile;
+        _username = args.get("user");
+        _sshKeyFile = args.get("key");
 
         System.out.println();
-        System.out.println("USERNAME: " + username);
-        System.out.println("SSH-KEY: " + sshKeyFile);
+        System.out.println("USERNAME: " + _username);
+        System.out.println("SSH-KEY: " + _sshKeyFile);
 
         if (args.hasFlag("sudo")) {
             _sudoPassword = PasswordField.readPassword("Enter sudo password: ");
