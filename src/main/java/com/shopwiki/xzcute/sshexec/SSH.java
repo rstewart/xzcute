@@ -1,4 +1,3 @@
-// SSH.java
 package com.shopwiki.xzcute.sshexec;
 
 import java.io.*;
@@ -7,94 +6,76 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.base.Charsets;
 import com.jcraft.jsch.*;
 
-/**
- * @owner eliot
- * @owner avery
- */
 public class SSH {
 
-    public static final boolean DEBUG = false;
     public static final int CONNECT_TIMEOUT = (int)TimeUnit.MINUTES.toMillis(1);
 
-    private static class MyUserInfo implements UserInfo {
+    private static final UserInfo USER_INFO = new UserInfo() {
 
         @Override
-        public String getPassphrase(){
-            if ( DEBUG ) System.out.println( "getPassphrase" );
+        public String getPassphrase() {
             return null;
         }
 
         @Override
-        public String getPassword(){
-            if ( DEBUG ) System.out.println( "getPassword" );
+        public String getPassword() {
             return null;
         }
 
         @Override
-        public boolean promptPassphrase(String message){
-            if ( DEBUG ) System.out.println( "promptPassphrase: " + message );
+        public boolean promptPassphrase(String message) {
             return false;
         }
 
         @Override
-        public boolean promptPassword(String message){
-            if ( DEBUG ) System.out.println( "promptPassword: " + message );
+        public boolean promptPassword(String message) {
             return false;
         }
 
         @Override
-        public boolean promptYesNo(String message){
-            if ( DEBUG ) System.out.println( "promptYesNo: " + message );
+        public boolean promptYesNo(String message) {
             return true;
         }
 
         @Override
-        public void showMessage(String message){
-            System.out.println( "showMessage: " + message );
+        public void showMessage(String message) {
+            System.out.println("showMessage: " + message);
         }
-    }
+    };
 
     public static class SSHException extends Exception {
-        public SSHException( String message ){
-            super( message );
+        public SSHException(String message) {
+            super(message);
         }
 
-        public SSHException( String message, Exception e ){
-            super( message , e );
+        public SSHException(String message, Exception e) {
+            super(message, e);
         }
     }
 
-    public static String sendCommand( String host , String command ) throws SSHException {
-        return sendCommand(host, command, false);
-    }
-
-    public static String sendCommand( String host , String command , boolean checkExitCode ) throws SSHException {
-        return sendCommand("localadmin", null, host, command, checkExitCode);
-    }
-
-    public static String sendCommand( String username, String privateKeyFile, String host , String command ) throws SSHException {
+    public static String sendCommand(String username, String privateKeyFile, String host, String command) throws SSHException {
         return sendCommand(username, privateKeyFile, host, command, false);
     }
 
-    public static String sendCommand( String username, String privateKeyFile, String host , String command , boolean checkExitCode ) throws SSHException {
+    public static String sendCommand(String username, String privateKeyFile, String host, String command, boolean checkExitCode) throws SSHException {
         Session session = null;
         try {
-            session = createSession( username, privateKeyFile, host );
+            session = createSession(username, privateKeyFile, host);
             ChannelExec channel = (ChannelExec)session.openChannel("exec");
 
             // Gross hack to enable password-less sudo for ec2-user -Rob
-            if (username.equals("ec2-user") && command.contains("sudo ")) {
-                channel.setPty(true);
-            }
+            //if (username.equals("ec2-user") && command.contains("sudo ")) {
+            //    channel.setPty(true);
+            //}
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             channel.setOutputStream(baos);
             channel.setErrStream(baos);
 
-            channel.setCommand( command );
+            channel.setCommand(command);
             channel.connect();
 
-            while (channel.isClosed() == false) {
+            while (! channel.isClosed()) {
                 try {
                     Thread.sleep(1);
                 } catch (InterruptedException e) {
@@ -110,8 +91,8 @@ public class SSH {
             }
 
             return output;
-        } catch ( JSchException je ){
-            throw new SSHException( "SSH Failed (" + host + ")\n" + command , je );
+        } catch (JSchException e) {
+            throw new SSHException("SSH Failed (" + host + ")\n" + command, e);
         } finally {
             if (session != null) {
                 session.disconnect();
@@ -119,7 +100,7 @@ public class SSH {
         }
     }
 
-    private static Session createSession( String username, String privateKeyFile, String host ) throws JSchException {
+    private static Session createSession(String username, String privateKeyFile, String host) throws JSchException {
         JSch jsch = new JSch();
 
         if (privateKeyFile != null) {
@@ -128,10 +109,10 @@ public class SSH {
             findAndAddIdentities(jsch);
         }
 
-        Session session = jsch.getSession( username , host , 22 );
-        session.setUserInfo( new MyUserInfo( ) );
-        session.setTimeout( CONNECT_TIMEOUT );
-        session.connect( CONNECT_TIMEOUT );
+        Session session = jsch.getSession(username, host, 22);
+        session.setUserInfo(USER_INFO);
+        session.setTimeout(CONNECT_TIMEOUT);
+        session.connect(CONNECT_TIMEOUT);
         return session;
     }
 
@@ -161,7 +142,7 @@ public class SSH {
         System.out.println();
 
         Args args = new Args(jargs);
-        String user = args.get("user", "localadmin");
+        String user = args.get("user");
         String key = args.get("key");
         String host = args.get("host");
         String cmd = args.get("cmd");
