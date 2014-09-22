@@ -4,16 +4,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
- * @owner eliot
- * @owner Kiril
- * @buddy Dan
- * @buddy rstewart
- * 
+ * Copied & modified from shopwiki repo.
+ *
  * -X is a flag
  * -X=foo sets a flag value
  */
@@ -35,13 +31,6 @@ public class Args {
         this(args, false);
     }
 
-    /**
-     * @param args
-     *            The command line args
-     * @param strict
-     *            If true, flags with values must use equals signs, like
-     *            "-a=foo", and "-a foo" is just a flag, followed by an arg.
-     */
     public Args(String[] args, boolean ignoreCase) {
 
         _ignoreCase = ignoreCase;
@@ -116,31 +105,6 @@ public class Args {
 
     public boolean hasFlag(String flag) {
         return get(flag) != null;
-    }
-
-    public int getInt(String flag, int def) {
-        String s = get(flag);
-        return Strings.isNullOrEmpty(s) ? def : Integer.parseInt(s);
-    }
-
-    public long getLong(String flag, long def) {
-        String s = get(flag);
-        return Strings.isNullOrEmpty(s) ? def : Long.parseLong(s);
-    }
-
-    public double getDouble(String flag, double def) {
-        String s = get(flag);
-        return Strings.isNullOrEmpty(s) ? def : Double.parseDouble(s);
-    }
-
-    public boolean getBoolean(String flag, boolean def) {
-        String s = get(flag);
-        return Strings.isNullOrEmpty(s) ? def : Boolean.parseBoolean(s);
-    }
-
-    public String get(String flag, String def) {
-        String val = get(flag);
-        return val == null ? def : val;
     }
 
     public String get(String flag) {
