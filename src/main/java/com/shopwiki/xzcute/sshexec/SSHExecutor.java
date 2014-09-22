@@ -1,13 +1,11 @@
 package com.shopwiki.xzcute.sshexec;
 
-import java.util.ArrayList;
+import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
@@ -16,9 +14,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.google.common.io.Files;
 import com.shopwiki.xzcute.VerboseThreadPoolExecutor;
 import com.shopwiki.xzcute.VerboseThreadPoolExecutor.TaskPrinter;
 import com.shopwiki.xzcute.sshexec.SSH.SSHException;
@@ -53,10 +56,6 @@ public class SSHExecutor {
 
     public SSHExecutor(Args args) throws Exception {
         this(args, getWorkers(args));
-    }
-
-    public SSHExecutor(Args args, Iterable<String> workers) throws Exception {
-        this(args, getWorkers(workers));
     }
 
     public SSHExecutor(Args args, Collection<Worker> workers) throws Exception {
@@ -101,7 +100,7 @@ public class SSHExecutor {
         }
 
         System.out.println("Only using " + ws.size() + " workers: " + ws);
-        List<Worker> workersToUse = new ArrayList<Worker>();
+        List<Worker> workersToUse = Lists.newArrayList();
         for (Worker worker : workers) {
             if (ws.contains(worker.w)) {
                 workersToUse.add(worker);
@@ -118,7 +117,7 @@ public class SSHExecutor {
             return null;
         }
 
-        Set<Integer> ws = new TreeSet<Integer>();
+        Set<Integer> ws = Sets.newTreeSet();
         for (String piece : COMMA_SPLITTER.split(arg)) {
             ws.add(Integer.parseInt(piece));
         }
@@ -126,7 +125,7 @@ public class SSHExecutor {
     }
 
     public static List<Worker> getWorkers(Iterable<String> it) {
-        List<Worker> workers = new ArrayList<Worker>();
+        List<Worker> workers = Lists.newArrayList();
         int w = 0;
         for (String s : it) {
             String host = s.trim();
@@ -151,7 +150,13 @@ public class SSHExecutor {
 
     public static List<Worker> getWorkersFromFile(String filename) {
         System.out.println("Getting workers from file: " + filename);
-        return getWorkers(new LineIterator(filename));
+        File file = new File(filename);
+        try {
+            List<String> lines = Files.readLines(file, Charsets.UTF_8);
+            return getWorkers(lines);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void commandWorkers(String command, Args args) throws SSHException, InterruptedException {
@@ -211,7 +216,7 @@ public class SSHExecutor {
         ExecutorService executor = Executors.newFixedThreadPool(_workers.size());
         ExecutorCompletionService<String> ecs = new ExecutorCompletionService<String>(executor);
 
-        Map<Future<String>,Worker> futureToWorker = new HashMap<Future<String>,Worker>();
+        Map<Future<String>, Worker> futureToWorker = Maps.newHashMap();
 
         for (final Worker worker : _workers) {
             Task task = new Task(worker, command);
@@ -236,18 +241,22 @@ public class SSHExecutor {
 
     private void _commandWorkersAsyncOrdered(String command) throws InterruptedException {
 
+        TaskPrinter<String> taskPrinter = new TaskPrinter<String>() {
+            @Override
+            public String resultToString(String result) {
+                return "";
+            }
+        };
+
         VerboseThreadPoolExecutor executor = VerboseThreadPoolExecutor.builder()
                 .setPoolSize(_workers.size())
                 .setVerbosePrint(true)
                 .setPrintExceptions(false)
                 .setExpectedNumTasks(_workers.size())
-                .setTaskPrinter(new TaskPrinter<String>() {
-                    @Override
-                    public String resultToString(String result) { return ""; }
-                })
+                .setTaskPrinter(taskPrinter)
                 .build();
 
-        Map<Worker,Future<String>> workerToFuture = new LinkedHashMap<Worker,Future<String>>();
+        Map<Worker, Future<String>> workerToFuture = Maps.newLinkedHashMap();
 
         for (Worker worker : _workers) {
             Task task = new Task(worker, command);
