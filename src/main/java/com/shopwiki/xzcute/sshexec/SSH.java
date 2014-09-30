@@ -63,10 +63,10 @@ public class SSH {
             session = createSession(username, privateKeyFile, host);
             ChannelExec channel = (ChannelExec)session.openChannel("exec");
 
-            // Gross hack to enable password-less sudo for ec2-user -Rob
-            //if (username.equals("ec2-user") && command.contains("sudo ")) {
-            //    channel.setPty(true);
-            //}
+            // Gross hack to enable password-less sudo -Rob
+            if (command.contains("sudo ")) {
+                channel.setPty(true);
+            }
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             channel.setOutputStream(baos);
