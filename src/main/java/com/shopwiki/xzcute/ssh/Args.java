@@ -1,4 +1,4 @@
-package com.shopwiki.xzcute.sshexec;
+package com.shopwiki.xzcute.ssh;
 
 import java.util.List;
 import java.util.Map;

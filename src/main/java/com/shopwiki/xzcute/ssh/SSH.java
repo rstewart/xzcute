@@ -1,4 +1,4 @@
-package com.shopwiki.xzcute.sshexec;
+package com.shopwiki.xzcute.ssh;
 
 import java.io.*;
 import java.util.concurrent.TimeUnit;
@@ -6,6 +6,9 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.base.Charsets;
 import com.jcraft.jsch.*;
 
+/**
+ * Copied & modified from shopwiki repo.
+ */
 public class SSH {
 
     public static final int CONNECT_TIMEOUT = (int)TimeUnit.MINUTES.toMillis(1);

@@ -1,4 +1,4 @@
-package com.shopwiki.xzcute.sshexec;
+package com.shopwiki.xzcute.ssh;
 
 import java.io.File;
 import java.io.IOException;

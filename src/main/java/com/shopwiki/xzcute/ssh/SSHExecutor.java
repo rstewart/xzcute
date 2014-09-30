@@ -1,4 +1,4 @@
-package com.shopwiki.xzcute.sshexec;
+package com.shopwiki.xzcute.ssh;
 
 import java.util.Collection;
 import java.util.List;
@@ -15,7 +15,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.shopwiki.xzcute.VerboseThreadPoolExecutor;
 import com.shopwiki.xzcute.VerboseThreadPoolExecutor.TaskPrinter;
-import com.shopwiki.xzcute.sshexec.SSH.SSHException;
+import com.shopwiki.xzcute.ssh.SSH.SSHException;
 import com.shopwiki.xzcute.util.UTF8;
 
 /**
