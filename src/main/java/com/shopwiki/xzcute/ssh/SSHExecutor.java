@@ -40,9 +40,8 @@ public class SSHExecutor {
     public SSHExecutor(Collection<Worker> workers, String username, String sshKeyFile, boolean sudo, boolean quiet) throws Exception {
 
         if (workers == null || workers.isEmpty()) {
-            throw new RuntimeException("Don't have any workers!");
+            throw new IllegalArgumentException("Don't have any workers!");
         }
-
         _workers = ImmutableList.copyOf(workers);
 
         _username = username;
@@ -222,6 +221,8 @@ public class SSHExecutor {
             psGrep(pattern, args);
             return;
         }
+
+        // TODO: USAGE message
     }
 
     public static void main(String[] jargs) throws Exception {

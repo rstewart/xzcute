@@ -40,6 +40,8 @@ public class Worker {
         } else if (args.hasFlag("file")) {
             String filename = args.get("file");
             workers = getFromFile(filename);
+        } else {
+            // TODO: USAGE message
         }
 
         String filterStr = args.get("w");
