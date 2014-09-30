@@ -1,11 +1,8 @@
 package com.shopwiki.xzcute.sshexec;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
@@ -14,14 +11,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.base.Charsets;
-import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.google.common.io.Files;
 import com.shopwiki.xzcute.VerboseThreadPoolExecutor;
 import com.shopwiki.xzcute.VerboseThreadPoolExecutor.TaskPrinter;
 import com.shopwiki.xzcute.sshexec.SSH.SSHException;
@@ -32,134 +23,61 @@ import com.shopwiki.xzcute.util.UTF8;
  */
 public class SSHExecutor {
 
-    public final String _username;
-    public final String _sshKeyFile;
+    private final String _username;
+    private final String _sshKeyFile;
     private final String _sudoPassword;
-    public final List<Worker> _workers;
-    public final boolean _verbose; // TODO: Get rid of this and make the methods that use it taken an extra param ???
+    private final List<Worker> _workers;
+    private final boolean _verbose; // TODO: Get rid of this and make the methods that use it taken an extra param ???
 
-    public static class Worker {
-        public final int w;
-        public final String host;
-
-        private Worker(int w, String host) {
-            this.w = w;
-            this.host = host;
-        }
-
-        @Override
-        public String toString() {
-            String s = String.format("%d2", w);
-            return "Worker # " + s + ": " + host;
-        }
+    private SSHExecutor(Args args) throws Exception {
+        this(Worker.get(args), args);
     }
 
-    public SSHExecutor(Args args) throws Exception {
-        this(args, getWorkers(args));
+    private SSHExecutor(Collection<Worker> workers, Args args) throws Exception {
+        this(workers, args.get("user"), args.get("key"), args.hasFlag("sudo"), args.hasFlag("quiet"));
     }
 
-    public SSHExecutor(Args args, Collection<Worker> workers) throws Exception {
-        if (args == null) {
-            args = new Args(null);
-        }
-
-        _username = args.get("user");
-        _sshKeyFile = args.get("key");
-
-        System.out.println();
-        System.out.println("USERNAME: " + _username);
-        System.out.println("SSH-KEY: " + _sshKeyFile);
-
-        if (args.hasFlag("sudo")) {
-            _sudoPassword = PasswordField.readPassword("Enter sudo password: ");
-        } else {
-            _sudoPassword = null;
-        }
-
-        _workers = ImmutableList.copyOf(workers);
-        _verbose = ! args.hasFlag("quiet");
-    }
-
-    public static List<Worker> getWorkers(Args args) {
-        List<Worker> workers = null;
-        if (args.hasFlag("hosts")) {
-            String str = args.get("hosts");
-            workers = getWorkersFromString(str);
-        } else if (args.hasFlag("file")) {
-            String filename = args.get("file");
-            workers = getWorkersFromFile(filename);
-        }
+    public SSHExecutor(Collection<Worker> workers, String username, String sshKeyFile, boolean sudo, boolean quiet) throws Exception {
 
         if (workers == null || workers.isEmpty()) {
             throw new RuntimeException("Don't have any workers!");
         }
 
-        Set<Integer> ws = getWorkerNums(args);
-        if (ws == null) {
-            return workers;
+        _workers = ImmutableList.copyOf(workers);
+
+        _username = username;
+        _sshKeyFile = sshKeyFile;
+
+        System.out.println();
+        System.out.println("USERNAME: " + _username);
+        System.out.println("SSH-KEY: " + _sshKeyFile);
+
+        if (sudo) {
+            _sudoPassword = PasswordField.readPassword("Enter sudo password: ");
+        } else {
+            _sudoPassword = null;
         }
 
-        System.out.println("Only using " + ws.size() + " workers: " + ws);
-        List<Worker> workersToUse = Lists.newArrayList();
-        for (Worker worker : workers) {
-            if (ws.contains(worker.w)) {
-                workersToUse.add(worker);
-            }
-        }
-        return workersToUse;
+        _verbose = ! quiet;
     }
 
-    private static final Splitter COMMA_SPLITTER = Splitter.on(',');
-
-    public static Set<Integer> getWorkerNums(Args args) {
-        String arg = args.get("w");
-        if (Strings.isNullOrEmpty(arg)) {
-            return null;
-        }
-
-        Set<Integer> ws = Sets.newTreeSet();
-        for (String piece : COMMA_SPLITTER.split(arg)) {
-            ws.add(Integer.parseInt(piece));
-        }
-        return ws;
+    public String getUsername() {
+        return _username;
     }
 
-    public static List<Worker> getWorkers(Iterable<String> it) {
-        List<Worker> workers = Lists.newArrayList();
-        int w = 0;
-        for (String s : it) {
-            String host = s.trim();
-            if (host.isEmpty()) {
-                continue;
-            }
-            if (host.startsWith("#")) { // skip over lines that are commented-out
-                continue;
-            }
-            w++;
-            Worker worker = new Worker(w, host);
-            workers.add(worker);
-            System.out.println("# " + w + "\t" + host);
-        }
-        return workers;
+    public String getSSHKeyFile() {
+        return _sshKeyFile;
     }
 
-    public static List<Worker> getWorkersFromString(String str) {
-        System.out.println("Getting workers from string: " + str);
-        return getWorkers(COMMA_SPLITTER.split(str));
+    public List<Worker> getWorkers() {
+        return _workers;
     }
 
-    public static List<Worker> getWorkersFromFile(String filename) {
-        System.out.println("Getting workers from file: " + filename);
-        File file = new File(filename);
-        try {
-            List<String> lines = Files.readLines(file, Charsets.UTF_8);
-            return getWorkers(lines);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public boolean isVerbose() {
+        return _verbose;
     }
 
-    public void commandWorkers(String command, Args args) throws SSHException, InterruptedException {
+    private void commandWorkers(String command, Args args) throws SSHException, InterruptedException {
         boolean serial = args.hasFlag("serial");
         boolean noWait = args.hasFlag("noWait");
         commandWorkers(command, serial, noWait);
@@ -287,11 +205,11 @@ public class SSHExecutor {
         }
     }
 
-    public void psGrep(String pattern, Args args) throws SSHException, InterruptedException {
+    private void psGrep(String pattern, Args args) throws SSHException, InterruptedException {
         commandWorkers("ps aux | grep " + pattern + " | grep -v grep", args);
     }
 
-    public void doStuff(Args args) throws Exception {
+    private void doStuff(Args args) throws Exception {
 
         if (args.hasFlag("cmd")) {
             String cmd = args.get("cmd");
